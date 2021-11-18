@@ -4,4 +4,50 @@
   padding: 0;
 }
 
-// TODO
+:root {
+  --main-font: 'Inter', sans-serif;
+
+  --background: #282c34;
+  --heading: #f8f8f8;
+  --body: #d7d7d7;
+  --info: #bbbbbb;
+  --highlight: #ff57b2;
+}
+
+@media screen and (max-width: 1024px) {
+  html {
+    font-size: 87.5%;
+  }
+}
+@media screen and (max-width: 991px) {
+  html {
+    font-size: 75%;
+  }
+}
+@media screen and (max-width: 767px) {
+  html {
+    font-size: 62.5%;
+  }
+}
+
+body {
+  font-family: var(--main-font);
+  background: var(--background);
+  color: var(--body);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+  transition: all 0.3s ease-in-out;
+}
+a:hover {
+  filter: brightness(0.8);
+}
+
+button {
+  background: 0;
+  border: 0;
+  cursor: pointer;
+  transition: all 0.3s ease-in-out;
+}
