@@ -1,1 +1,40 @@
-// TODO
+.postHeader {
+  margin-bottom: 4rem;
+
+  h2 {
+    font-size: 3rem;
+    line-height: 3.625rem;
+    letter-spacing: -0.5px;
+    margin-bottom: 1.5rem;
+    color: var(--heading);
+  }
+
+  span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    & + span {
+      margin-left: 1.5rem;
+    }
+  }
+
+  mark {
+    font-size: 0.875rem;
+    line-height: 1rem;
+    background: transparent;
+    color: var(--info);
+  }
+}
+
+.postContent {
+  h3 {
+    font-size: 2rem;
+    color: var(--heading);
+    margin-bottom: 2rem;
+  }
+
+  > div {
+    margin-bottom: 2rem;
+  }
+}
