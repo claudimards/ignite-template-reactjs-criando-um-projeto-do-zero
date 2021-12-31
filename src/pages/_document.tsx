@@ -18,6 +18,12 @@ export default class MyDocument extends Document {
           />
 
           <link rel="shortcut icon" href="/favicon.png" type="image/png" />
+
+          <script
+            async
+            defer
+            src="//static.cdn.prismic.io/prismic.js?repo=adevindev&new=true"
+          />
         </Head>
 
         <body>

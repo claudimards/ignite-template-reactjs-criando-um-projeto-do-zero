@@ -1,3 +1,5 @@
+/* eslint-disable prettier/prettier */
+/* eslint-disable no-useless-escape */
 /* eslint-disable react/no-danger */
 import { GetStaticPaths, GetStaticProps } from 'next';
 import Head from 'next/head';
@@ -10,6 +12,7 @@ import { useRouter } from 'next/router';
 import Prismic from '@prismicio/client';
 import { RichText } from 'prismic-dom';
 import { getPrismicClient } from '../../services/prismic';
+import Comments from '../../components/Comments';
 
 import commonStyles from '../../styles/common.module.scss';
 import styles from './post.module.scss';
@@ -33,9 +36,10 @@ interface Post {
 
 interface PostProps {
   post: Post;
+  readingTime: number
 }
 
-export default function Post({ post }: PostProps): JSX.Element {
+export default function Post({ post, readingTime }: PostProps): JSX.Element {
   const router = useRouter();
 
   if (router.isFallback) {
@@ -78,7 +82,7 @@ export default function Post({ post }: PostProps): JSX.Element {
               </span>
               <span>
                 <FiClock />
-                <mark>4 min</mark>
+                <mark>{readingTime} min</mark>
               </span>
             </div>
             {post.data.content.map(content => (
@@ -93,6 +97,8 @@ export default function Post({ post }: PostProps): JSX.Element {
             ))}
           </article>
         </section>
+
+        <Comments />
       </main>
     </>
   );
@@ -119,6 +125,8 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
   const prismic = getPrismicClient();
   const response = await prismic.getByUID('post', String(slug), {});
 
+  let readingTime;
+
   const post = {
     first_publication_date: response.first_publication_date,
     uid: response.uid,
@@ -133,9 +141,21 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
     },
   };
 
+  readingTime = response.data.content
+    .map(content => content.heading.split(' ').length)
+    .reduce((acc, sum) => acc + sum);
+
+  readingTime += response.data.content
+    .map(content => RichText.asText(content.body).split(' ').length)
+    .reduce((acc, sum) => acc + sum);
+
+    readingTime /= 200;
+    readingTime = Math.ceil(readingTime);
+
   return {
     props: {
       post,
+      readingTime
     },
     revalidate: 60 * 30, // 30 minutos
   };
