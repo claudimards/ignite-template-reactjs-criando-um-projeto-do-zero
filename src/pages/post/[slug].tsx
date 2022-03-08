@@ -16,6 +16,7 @@ import Comments from '../../components/Comments';
 
 import commonStyles from '../../styles/common.module.scss';
 import styles from './post.module.scss';
+import Link from 'next/link';
 
 interface Post {
   first_publication_date: string | null;
@@ -36,10 +37,11 @@ interface Post {
 
 interface PostProps {
   post: Post;
-  readingTime: number
+  readingTime: number;
+  preview?: boolean;
 }
 
-export default function Post({ post, readingTime }: PostProps): JSX.Element {
+export default function Post({ post, readingTime, preview }: PostProps): JSX.Element {
   const router = useRouter();
 
   if (router.isFallback) {
@@ -53,6 +55,14 @@ export default function Post({ post, readingTime }: PostProps): JSX.Element {
       </Head>
 
       <main>
+        {preview && (
+          <aside>
+            <Link href="/api/exit-preview">
+              <a>Sair do modo Preview</a>
+            </Link>
+          </aside>
+        )}
+
         <section className={styles.banner}>
           <Image
             src={post.data.banner.url}
@@ -120,10 +130,12 @@ export const getStaticPaths: GetStaticPaths = async () => {
   };
 };
 
-export const getStaticProps: GetStaticProps = async ({ params }) => {
+export const getStaticProps: GetStaticProps = async ({ params, preview = false, previewData }) => {
   const { slug } = params;
   const prismic = getPrismicClient();
-  const response = await prismic.getByUID('post', String(slug), {});
+  const response = await prismic.getByUID('post', String(slug), {
+    ref: previewData?.ref ?? null,
+  });
 
   let readingTime;
 
@@ -143,11 +155,11 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
 
   readingTime = response.data.content
     .map(content => content.heading.split(' ').length)
-    .reduce((acc, sum) => acc + sum);
+    .reduce((acc: number, sum: number) => acc + sum);
 
   readingTime += response.data.content
     .map(content => RichText.asText(content.body).split(' ').length)
-    .reduce((acc, sum) => acc + sum);
+    .reduce((acc: number, sum: number) => acc + sum);
 
     readingTime /= 200;
     readingTime = Math.ceil(readingTime);
@@ -155,7 +167,8 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
   return {
     props: {
       post,
-      readingTime
+      readingTime,
+      preview
     },
     revalidate: 60 * 30, // 30 minutos
   };
