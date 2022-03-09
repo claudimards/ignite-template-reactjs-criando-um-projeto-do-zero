@@ -19,7 +19,8 @@ import styles from './post.module.scss';
 import Link from 'next/link';
 
 interface Post {
-  first_publication_date: string | null;
+  formatted_first_publication_date: string | null;
+  formatted_last_publication_date: string | null;
   data: {
     title: string;
     banner: {
@@ -35,13 +36,24 @@ interface Post {
   };
 }
 
-interface PostProps {
-  post: Post;
-  readingTime: number;
-  preview?: boolean;
+interface RelatedPost {
+  uid: string;
+  data: {
+    title: string;
+  }
 }
 
-export default function Post({ post, readingTime, preview }: PostProps): JSX.Element {
+interface PostProps {
+  post: Post;
+  nextPost?: RelatedPost;
+  prevPost?: RelatedPost;
+  readingTime: number;
+  preview?: boolean;
+  isPostEdited: boolean;
+  isThereRelatedPost: boolean;
+}
+
+export default function Post({ post, isPostEdited, nextPost, prevPost, isThereRelatedPost, readingTime, preview }: PostProps): JSX.Element {
   const router = useRouter();
 
   if (router.isFallback) {
@@ -55,14 +67,6 @@ export default function Post({ post, readingTime, preview }: PostProps): JSX.Ele
       </Head>
 
       <main>
-        {preview && (
-          <aside>
-            <Link href="/api/exit-preview">
-              <a>Sair do modo Preview</a>
-            </Link>
-          </aside>
-        )}
-
         <section className={styles.banner}>
           <Image
             src={post.data.banner.url}
@@ -78,13 +82,7 @@ export default function Post({ post, readingTime, preview }: PostProps): JSX.Ele
               <h2>{post.data.title}</h2>
               <span>
                 <FiCalendar />
-                <mark>
-                  {format(
-                    new Date(post.first_publication_date),
-                    'dd MMM yyyy',
-                    { locale: ptBR }
-                  )}
-                </mark>
+                <mark>{post.formatted_first_publication_date}</mark>
               </span>
               <span>
                 <FiUser />
@@ -94,7 +92,16 @@ export default function Post({ post, readingTime, preview }: PostProps): JSX.Ele
                 <FiClock />
                 <mark>{readingTime} min</mark>
               </span>
+
+              { isPostEdited && (
+                <p>
+                  <em>* editado em&nbsp;
+                  {post.formatted_last_publication_date}
+                  </em>
+                </p>
+              ) }
             </div>
+
             {post.data.content.map(content => (
               <div key={content.heading} className={styles.postContent}>
                 <h3>{content.heading}</h3>
@@ -105,10 +112,40 @@ export default function Post({ post, readingTime, preview }: PostProps): JSX.Ele
                 />
               </div>
             ))}
+
+            { isThereRelatedPost && (
+              <div className={styles.relatedPosts}>
+                { prevPost && (
+                  <Link href={`/post/${prevPost.uid}`}>
+                    <a>
+                      <span>{prevPost.data.title}</span>
+                      <span>Post anterior</span>
+                    </a>
+                  </Link>
+                ) }
+
+                { nextPost && (
+                  <Link href={`/post/${nextPost.uid}`}>
+                    <a>
+                      <span>{nextPost.data.title}</span>
+                      <span>Próximo post</span>
+                    </a>
+                  </Link>
+                ) }
+              </div>
+            ) }
+            
+            <Comments />
+
+            {preview && (
+              <aside>
+                <Link href="/api/exit-preview">
+                  <a>Sair do modo Preview</a>
+                </Link>
+              </aside>
+            )}
           </article>
         </section>
-
-        <Comments />
       </main>
     </>
   );
@@ -137,10 +174,44 @@ export const getStaticProps: GetStaticProps = async ({ params, preview = false, 
     ref: previewData?.ref ?? null,
   });
 
+  const nextResponse = await prismic.query(
+    // Replace `article` with your doc type
+    Prismic.Predicates.at('document.type', 'post'),
+    {
+      pageSize: 1,
+      after: response?.id,
+      orderings: '[document.first_publication_date desc]',
+    },
+  )
+  const prevResponse = await prismic.query(
+    // Replace `article` with your doc type
+    Prismic.Predicates.at('document.type', 'post'),
+    {
+      pageSize: 1,
+      after: response?.id,
+      orderings: '[document.first_publication_date]',
+    },
+  )
+  const nextPost = nextResponse?.results[0] || null
+  const prevPost = prevResponse?.results[0] || null
+
+  const isThereRelatedPost = nextPost || prevPost
+
   let readingTime;
 
   const post = {
     first_publication_date: response.first_publication_date,
+    formatted_first_publication_date: format(
+      new Date(response.first_publication_date),
+      'dd MMM yyyy',
+      { locale: ptBR }
+    ),
+    last_publication_date: response.last_publication_date,
+    formatted_last_publication_date: format(
+      new Date(response.last_publication_date),
+      "dd MMM yyyy, 'às' HH:mm",
+      { locale: ptBR }
+    ),
     uid: response.uid,
     data: {
       title: response.data.title,
@@ -152,6 +223,8 @@ export const getStaticProps: GetStaticProps = async ({ params, preview = false, 
       content: response.data.content,
     },
   };
+
+  const isPostEdited = post.first_publication_date !== post.last_publication_date
 
   readingTime = response.data.content
     .map(content => content.heading.split(' ').length)
@@ -168,7 +241,11 @@ export const getStaticProps: GetStaticProps = async ({ params, preview = false, 
     props: {
       post,
       readingTime,
-      preview
+      preview,
+      isPostEdited,
+      nextPost,
+      prevPost,
+      isThereRelatedPost
     },
     revalidate: 60 * 30, // 30 minutos
   };

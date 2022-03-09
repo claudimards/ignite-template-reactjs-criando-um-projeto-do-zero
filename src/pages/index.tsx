@@ -64,14 +64,6 @@ export default function Home({ postsPagination, preview }: HomeProps): JSX.Eleme
       </Head>
 
       <main className={commonStyles.pageContainer}>
-        {preview && (
-          <aside>
-            <Link href="/api/exit-preview">
-              <a>Sair do modo Preview</a>
-            </Link>
-          </aside>
-        )}
-        
         <section className={commonStyles.pageContent}>
           {content.results.length ? (
             content.results.map(post => (
@@ -113,6 +105,14 @@ export default function Home({ postsPagination, preview }: HomeProps): JSX.Eleme
               Carregar mais posts
             </button>
           )}
+
+          {preview && (
+            <aside>
+              <Link href="/api/exit-preview">
+                <a>Sair do modo Preview</a>
+              </Link>
+            </aside>
+          )}
         </section>
       </main>
     </>
@@ -125,7 +125,7 @@ export const getStaticProps: GetStaticProps = async ({ preview = false, previewD
   const postsResponse = await prismic.query(
     [Prismic.predicates.at('document.type', 'post')],
     {
-      pageSize: 10,
+      pageSize: 5,
       ref: previewData?.ref ?? null,
     }
   );
